@@ -23,6 +23,8 @@ class EditTextWithMask(
 
     private var turnOffFilterFlag = false
 
+    private var hasMaskSymbols: Boolean = false
+
     private var action = Action.ADD
 
     private enum class Action {
@@ -34,7 +36,7 @@ class EditTextWithMask(
 
     var suffix = ""
 
-    var mask = "miron pidoras (####) i huesos"
+    var mask = "7 (###) ## ##"
 
     var maskPlaceholderSymbol = '#'
 
@@ -51,6 +53,7 @@ class EditTextWithMask(
             relativePositions.add(symbolPositionsPointer)
             if(char == maskPlaceholderSymbol){
                 symbolPositionsPointer++
+                hasMaskSymbols = true
             }
         }
         if(relativePositions.isEmpty()){
@@ -67,14 +70,14 @@ class EditTextWithMask(
                 relativePositions[dstart]
             }
             else {
-                relativePositions.last() + (dstart - max(mask.lastIndex, mask.length))
+                relativePositions.last() + (dstart - getRelativeOffset())
             }
 
             val endRel = if(dend < relativePositions.size) {
                 relativePositions[dend]
             }
             else {
-                relativePositions.last() + (dend - max(mask.lastIndex, mask.length))
+                relativePositions.last() + (dend - getRelativeOffset())
             }
 
             unformattedValue = if(dstart < dend){
@@ -87,6 +90,15 @@ class EditTextWithMask(
             source ?: ""
         }
         filters = filters.clone().plus(inputFilter)
+    }
+
+    private fun getRelativeOffset(): Int {
+        return if(!hasMaskSymbols){
+            mask.length
+        }
+        else{
+            mask.lastIndex
+        }
     }
 
     private fun addTextChangedListener() {
@@ -105,9 +117,12 @@ class EditTextWithMask(
                 this@EditTextWithMask.removeTextChangedListener(this)
                 turnOffFilterFlag = true
                 val mask = applyMask(cursor)
-                println(mask)
+                val cursorPosition = cursor
                 s?.let {
                     s.replace(0, s.length, mask)
+                }
+                if(action == Action.DELETE && (s?.length ?: 0) > 0){
+                    this@EditTextWithMask.setSelection(cursorPosition)
                 }
                 turnOffFilterFlag = false
                 this@EditTextWithMask.addTextChangedListener(this)
@@ -116,7 +131,7 @@ class EditTextWithMask(
     }
 
     private fun applyMask(cursorPosition: Int): String {
-        if(unformattedValue.isEmpty()) return ""
+        //if(unformattedValue.isEmpty()) return ""
         val newString = mask.toCharArray()
         var newStringSuffix = unformattedValue
         var lastFormattedPosition = 0
@@ -131,13 +146,16 @@ class EditTextWithMask(
                 newStringSuffix
             )
         }
-        if(action == Action.ADD) {
-            return String(newString).split(maskPlaceholderSymbol)[0]
-        }
-        else {
-            return String(newString)
+        return if(action == Action.ADD) {
+            String(newString).split(maskPlaceholderSymbol)[0]
+        } else {
+            val newStringWithoutPlaceholders = String(newString)
                 .split(maskPlaceholderSymbol)[0]
-                .substring(0,max(lastFormattedPosition, cursorPosition))
+            val offset = if(
+                newStringWithoutPlaceholders.length > 1
+            ) 1 else 0
+            newStringWithoutPlaceholders
+                .substring(0,max(lastFormattedPosition + offset, cursorPosition))
         }
     }
 
