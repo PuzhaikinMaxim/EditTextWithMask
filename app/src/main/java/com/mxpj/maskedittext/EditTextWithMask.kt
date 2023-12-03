@@ -36,7 +36,7 @@ class EditTextWithMask(
 
     var suffix = ""
 
-    var mask = "7 (###) ## ##"
+    var mask = "miron huesos"
 
     var maskPlaceholderSymbol = '#'
 
@@ -151,11 +151,20 @@ class EditTextWithMask(
         } else {
             val newStringWithoutPlaceholders = String(newString)
                 .split(maskPlaceholderSymbol)[0]
-            val offset = if(
-                newStringWithoutPlaceholders.length > 1
-            ) 1 else 0
+            val offset = getOffsetForFormattedPosition(newStringWithoutPlaceholders)
             newStringWithoutPlaceholders
                 .substring(0,max(lastFormattedPosition + offset, cursorPosition))
+        }
+    }
+
+    private fun getOffsetForFormattedPosition(
+        formattedString: String,
+    ): Int {
+        return if(mask.isEmpty()){
+            if(formattedString.length > 1) 1 else 0
+        }
+        else {
+            if(unformattedValue.isNotEmpty()) 1 else 0
         }
     }
 
