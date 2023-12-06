@@ -32,15 +32,18 @@ class EditTextWithMask(
         DELETE
     }
 
+    private var isMaskPlaceholderLast = false
+
     var unformattedValue = ""
 
     var suffix = ""
 
-    var mask = "miron huesos"
+    var mask = "(miron) (##)"
 
     var maskPlaceholderSymbol = '#'
 
     init {
+        //mask += maskPlaceholderSymbol
         addInputFilter()
         for((index, sym) in mask.withIndex()){
             if(sym == maskPlaceholderSymbol){
@@ -50,16 +53,17 @@ class EditTextWithMask(
 
         var symbolPositionsPointer = 0
         for(char in mask){
+            isMaskPlaceholderLast = false
             relativePositions.add(symbolPositionsPointer)
             if(char == maskPlaceholderSymbol){
                 symbolPositionsPointer++
                 hasMaskSymbols = true
+                isMaskPlaceholderLast = true
             }
         }
         if(relativePositions.isEmpty()){
             relativePositions.add(0)
         }
-
         addTextChangedListener()
     }
 
@@ -77,6 +81,9 @@ class EditTextWithMask(
                 relativePositions[dend]
             }
             else {
+                println(relativePositions.last())
+                println(dend)
+                println(getRelativeOffset())
                 relativePositions.last() + (dend - getRelativeOffset())
             }
 
@@ -93,7 +100,7 @@ class EditTextWithMask(
     }
 
     private fun getRelativeOffset(): Int {
-        return if(!hasMaskSymbols){
+        return if(!hasMaskSymbols || !isMaskPlaceholderLast){
             mask.length
         }
         else{
